@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home Network Guardian</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">🛡️ Home Network Guardian</div>
+    <div id="userbox" class="userbox hidden">
+      <span id="plan" class="badge">FREE</span>
+      <span id="email" class="email"></span>
+      <button id="logout" class="btn-link">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Auth views -->
+    <section id="auth" class="card auth hidden">
+      <div class="tabs">
+        <button class="tab active" data-tab="signin">Sign In</button>
+        <button class="tab" data-tab="signup">Sign Up</button>
+      </div>
+      <form id="signin-form" class="form">
+        <input type="email" id="si-email" placeholder="Email" required />
+        <input type="password" id="si-pass" placeholder="Password" required />
+        <button class="btn primary" type="submit">Sign In</button>
+      </form>
+      <form id="signup-form" class="form hidden">
+        <input type="email" id="su-email" placeholder="Email" required />
+        <input type="password" id="su-pass" placeholder="Password (8+ chars)" required />
+        <button class="btn primary" type="submit">Create Account</button>
+      </form>
+      <p id="auth-msg" class="msg"></p>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="dash" class="hidden">
+      <div class="row between">
+        <h2>Your Houses</h2>
+        <button id="add-house" class="btn">+ New House</button>
+      </div>
+      <div id="houses" class="houses"></div>
+
+      <div id="house-detail" class="card hidden">
+        <div class="row between">
+          <h3 id="hd-name"></h3>
+          <button id="upgrade" class="btn gold hidden">⭐ Go Pro</button>
+        </div>
+        <div id="hd-status" class="status"></div>
+
+        <h4>Devices</h4>
+        <table class="devices">
+          <thead><tr><th>MAC</th><th>IP</th><th>Vendor</th><th>Status</th><th>Last seen</th></tr></thead>
+          <tbody id="hd-devices"></tbody>
+        </table>
+
+        <h4>Alerts</h4>
+        <div id="hd-alerts" class="alerts"></div>
+
+        <div class="keybox">
+          <label>Router House API Key (paste from <code>install.sh</code>):</label>
+          <div class="row">
+            <input type="text" id="hd-key" placeholder="hng_house_..." />
+            <button id="hd-save-key" class="btn">Link Router</button>
+          </div>
+          <p id="hd-key-msg" class="msg"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

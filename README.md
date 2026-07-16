@@ -38,3 +38,18 @@ sudo python3 guardian_agent.py --once
 
 See [`guardian_agent/README.md`](guardian_agent/README.md) for full config
 and the website API contract.
+
+## Website (dashboard + accounts)
+
+[`website/`](website/) is the backend + dashboard the agent reports to:
+user **sign-up / sign-in**, **houses**, and a **Pro** tier. The router's
+`hng_house_…` key is linked to a house; reports are accepted only when the key
+matches. See [`website/README.md`](website/README.md) to run it.
+
+```bash
+cd website && pip install -r requirements.txt
+flask --app app run --host 0.0.0.0 --port 5000
+```
+
+Then set the agent's `config.json` `alerts.website.base_url` to
+`http://YOUR_SERVER:5000/api` and link the key in the dashboard.

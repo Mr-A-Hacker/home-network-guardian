@@ -6,3 +6,9 @@ agent_key.json
 guardian.log
 *.pyc
 __pycache__/
+
+# Website runtime
+website/guardian.db
+website/.venv/
+website/__pycache__/
+*.sqlite3
