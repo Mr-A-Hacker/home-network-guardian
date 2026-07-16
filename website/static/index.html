@@ -4,11 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Home Network Guardian</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">🛡️ Home Network Guardian</div>
+    <div class="brand"><span class="shield">🛡️</span> Home Network Guardian</div>
     <div id="userbox" class="userbox hidden">
       <span id="plan" class="badge">FREE</span>
       <span id="email" class="email"></span>
@@ -17,7 +19,7 @@
   </header>
 
   <main>
-    <!-- Auth views -->
+    <!-- Auth -->
     <section id="auth" class="card auth hidden">
       <div class="tabs">
         <button class="tab active" data-tab="signin">Sign In</button>
@@ -39,10 +41,13 @@
     <!-- Dashboard -->
     <section id="dash" class="hidden">
       <div class="row between">
-        <h2>Your Houses</h2>
+        <div>
+          <h2>Your Houses</h2>
+          <div style="color:var(--muted);font-size:14px">Monitor every device and move on your network.</div>
+        </div>
         <button id="add-house" class="btn">+ New House</button>
       </div>
-      <div id="houses" class="houses"></div>
+      <div id="houses" class="houses" style="margin-top:18px"></div>
 
       <div id="house-detail" class="card hidden">
         <div class="row between">
@@ -50,6 +55,7 @@
           <button id="upgrade" class="btn gold hidden">⭐ Go Pro</button>
         </div>
         <div id="hd-status" class="status"></div>
+        <div id="hd-stats" class="stat-row"></div>
 
         <h4>Devices</h4>
         <table class="devices">
@@ -61,7 +67,7 @@
         <div id="hd-alerts" class="alerts"></div>
 
         <div class="keybox">
-          <label>Router House API Key (paste from <code>install.sh</code>):</label>
+          <label>Router House API Key (paste from <code>install.sh</code> output):</label>
           <div class="row">
             <input type="text" id="hd-key" placeholder="hng_house_..." />
             <button id="hd-save-key" class="btn">Link Router</button>
