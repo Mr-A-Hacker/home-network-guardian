@@ -1,0 +1,37 @@
+{
+  "house": {
+    "name": "My Home",
+    "scan_interval_seconds": 60,
+    "interface": "auto",
+    "subnet": "192.168.1.0/24"
+  },
+  "discovery": {
+    "use_nmap": true,
+    "use_arp_scan": true,
+    "use_arpwatch": false,
+    "known_devices_file": "known_devices.json",
+    "alert_on_new_device": true,
+    "alert_on_device_left": true
+  },
+  "flows": {
+    "watch_connections": true,
+    "track_top_talkers": true,
+    "alert_on_scan_like_activity": true
+  },
+  "ids": {
+    "engine": "auto",
+    "suricata_log": "/var/log/suricata/eve.json",
+    "snort_log": "/var/log/snort/alert.json"
+  },
+  "alerts": {
+    "website": {
+      "enabled": true,
+      "base_url": "https://your-website.example.com/api",
+      "endpoint": "/v1/report",
+      "api_key": "",
+      "timeout_seconds": 10
+    },
+    "telegram": { "enabled": false, "bot_token": "", "chat_id": "" },
+    "discord":  { "enabled": false, "webhook_url": "" }
+  }
+}

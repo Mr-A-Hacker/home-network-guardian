@@ -1,0 +1,7 @@
+# Generated at runtime - do not commit
+house_key.json
+known_devices.json
+agent_state.json
+agent_key.json
+*.pyc
+__pycache__/
