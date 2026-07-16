@@ -10,5 +10,6 @@ __pycache__/
 # Website runtime
 website/guardian.db
 website/.venv/
+website/venv/
 website/__pycache__/
 *.sqlite3
