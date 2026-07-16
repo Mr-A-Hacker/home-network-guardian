@@ -3,13 +3,16 @@
 The router is the single agent for the ENTIRE house. One key identifies the
 home on your website. Generated once, stored locally, sent on every report.
 """
-import secrets
-import string
 import hashlib
 import json
 import os
+import secrets
+import string
 import time
 
+from common import atomic_write_json, get_logger
+
+log = get_logger("api_key")
 
 KEY_FILE = "house_key.json"
 KEY_PREFIX = "hng_house_"
@@ -27,9 +30,11 @@ def key_fingerprint(api_key: str) -> str:
 
 def load_or_create_key(path: str = KEY_FILE) -> dict:
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as fh:
-            return json.load(fh)
-
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                return json.load(fh)
+        except Exception:
+            log.warning("existing key file unreadable, regenerating")
     api_key = generate_key()
     record = {
         "api_key": api_key,
@@ -37,9 +42,11 @@ def load_or_create_key(path: str = KEY_FILE) -> dict:
         "house_id": secrets.token_hex(8),
         "created_at": int(time.time()),
     }
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump(record, fh, indent=2)
-    os.chmod(path, 0o600)
+    try:
+        atomic_write_json(path, record)
+        os.chmod(path, 0o600)
+    except Exception as exc:
+        log.error("could not persist house key: %s", exc)
     return record
 
 

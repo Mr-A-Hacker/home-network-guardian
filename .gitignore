@@ -3,5 +3,6 @@ house_key.json
 known_devices.json
 agent_state.json
 agent_key.json
+guardian.log
 *.pyc
 __pycache__/

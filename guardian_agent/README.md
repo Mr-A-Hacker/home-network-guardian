@@ -24,7 +24,7 @@ sudo bash install.sh
 ```
 Or clone straight from GitHub:
 ```bash
-sudo bash install.sh https://github.com/youruser/home-network-guardian
+sudo bash install.sh https://github.com/Mr-A-Hacker/home-network-guardian
 ```
 `install.sh` auto-detects the package manager (`opkg`/`apk`/`pkg`/`apt`/`yum`),
 installs `python3 nmap arp-scan suricata`, generates the **one house key**,
@@ -48,7 +48,9 @@ POST `{base_url}/v1/report` with header `X-API-Key: hng_house_xxx`:
 {
   "house_id": "abcd1234...",
   "event": "status",
+  "agent_version": "1.0.0",
   "timestamp": 1700000000,
+  "uptime_ok": true,
   "devices": {
     "total_present": 7,
     "known_count": 6,
@@ -58,8 +60,14 @@ POST `{base_url}/v1/report` with header `X-API-Key: hng_house_xxx`:
   },
   "ids_alerts": [ { "signature": "...", "src_ip": "..." } ],
   "flows": { "top_talkers": [ ... ], "scan_like_sources": [ ... ] },
-  "ids": { "engine": "suricata", "running": true }
+  "ids": { "engine": "suricata", "running": true },
+  "tools": { "nmap": true, "arp_scan": true, "suricata": true, "snort": false }
 }
 ```
 Your backend validates the ONE house key, then shows all devices + activity
 for that home in the dashboard.
+
+## Logs
+All activity is logged to stdout and `guardian.log` (rotated manually or via
+logrotate). Each cycle is isolated: a failure in discovery, IDS, or flows will
+not crash the agent.

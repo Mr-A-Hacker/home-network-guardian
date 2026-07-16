@@ -9,8 +9,11 @@ import os
 import re
 import shutil
 import subprocess
-import xml.etree.ElementTree as ET
+import time
 
+from common import atomic_write_json, get_logger
+
+log = get_logger("watcher")
 
 _MAC_RE = re.compile(r"([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}")
 
@@ -21,16 +24,22 @@ def _which(tool):
 
 def nmap_scan(subnet: str) -> list[dict]:
     if not _which("nmap"):
+        log.warning("nmap not installed - skipping nmap scan")
         return []
     try:
         out = subprocess.run(["nmap", "-sn", "-oX", "-", subnet],
-                             capture_output=True, text=True, timeout=120).stdout
-    except Exception:
+                             capture_output=True, text=True, timeout=180).stdout
+    except subprocess.TimeoutExpired:
+        log.warning("nmap scan timed out on %s", subnet)
+        return []
+    except Exception as exc:
+        log.error("nmap scan failed: %s", exc)
         return []
     hosts = []
     try:
+        import xml.etree.ElementTree as ET
         root = ET.fromstring(out)
-    except ET.ParseError:
+    except Exception:
         return hosts
     for host in root.iter("host"):
         addr = mac = vendor = None
@@ -47,14 +56,19 @@ def nmap_scan(subnet: str) -> list[dict]:
 
 def arp_scan(interface: str = "auto") -> list[dict]:
     if not _which("arp-scan"):
+        log.warning("arp-scan not installed - skipping arp-scan")
         return []
     cmd = ["arp-scan", "--localnet"]
     if interface != "auto":
         cmd = ["arp-scan", "-I", interface, "--localnet"]
     try:
         out = subprocess.run(cmd, capture_output=True, text=True,
-                             timeout=120).stdout
-    except Exception:
+                             timeout=180).stdout
+    except subprocess.TimeoutExpired:
+        log.warning("arp-scan timed out")
+        return []
+    except Exception as exc:
+        log.error("arp-scan failed: %s", exc)
         return []
     hosts = []
     for line in out.splitlines():
@@ -72,12 +86,8 @@ def load_known(path: str) -> dict:
         with open(path, "r", encoding="utf-8") as fh:
             return json.load(fh)
     except Exception:
+        log.warning("could not read known devices file %s", path)
         return {}
-
-
-def save_known(path: str, data: dict) -> None:
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump(data, fh, indent=2)
 
 
 def scan_once(config: dict) -> dict:
@@ -96,19 +106,13 @@ def scan_once(config: dict) -> dict:
     return snap
 
 
-def diff_state(config: dict, previous: dict, current: dict) -> dict:
-    """Compute joins / leaves / stable between two snapshots."""
+def diff_state(previous: dict, current: dict) -> dict:
     prev_macs = set(previous)
     cur_macs = set(current)
-
-    joined = [current[m] for m in (cur_macs - prev_macs)]
-    left = [previous[m] for m in (prev_macs - cur_macs)]
-    present = [current[m] for m in (cur_macs & prev_macs)]
-
     return {
-        "joined": joined,
-        "left": left,
-        "present": present,
+        "joined": [current[m] for m in (cur_macs - prev_macs)],
+        "left": [previous[m] for m in (prev_macs - cur_macs)],
+        "present": [current[m] for m in (cur_macs & prev_macs)],
         "total_present": len(cur_macs),
     }
 
@@ -120,15 +124,19 @@ def watch(config: dict, state: dict) -> dict:
 
     current = scan_once(config)
     previous = state.get("last_snapshot", {})
+    result = diff_state(previous, current)
 
-    result = diff_state(config, previous, current)
-
-    # Persist snapshot and learn new devices as "known" once seen.
     state["last_snapshot"] = current
+    now = int(time.time())
     for mac, dev in current.items():
         if mac not in known:
-            known[mac] = {**dev, "first_seen": int(__import__("time").time())}
-    save_known(known_file, known)
+            known[mac] = {**dev, "first_seen": now, "last_seen": now}
+        else:
+            known[mac]["last_seen"] = now
+    try:
+        atomic_write_json(known_file, known)
+    except Exception as exc:
+        log.error("failed to persist known devices: %s", exc)
 
     result["known_device_count"] = len(known)
     return result

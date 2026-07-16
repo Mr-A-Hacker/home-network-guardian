@@ -3,12 +3,12 @@
 #  Home Network Guardian - router house agent installer
 #  Targets ANY Linux/BSD router (OpenWrt, pfSense/OPNsense, Debian/RPi...).
 #  Run as root:  sudo bash install.sh
+#  Optional: pass a repo URL to self-clone:
+#    sudo bash install.sh https://github.com/you/home-network-guardian
 # =====================================================================
 set -euo pipefail
 
-# Optional: clone from git instead of using local files.
-#   sudo bash install.sh https://github.com/youruser/home-network-guardian
-REPO_URL="${1:-https://github.com/YOURUSER/home-network-guardian}"
+REPO_URL="${1:-https://github.com/Mr-A-Hacker/home-network-guardian}"
 
 AGENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" && pwd 2>/dev/null || pwd)"
 
@@ -17,15 +17,25 @@ AGENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" && pwd 2>/dev/null || pwd)"
 if [ ! -f "$AGENT_DIR/guardian_agent.py" ]; then
     echo "==> Agent files not local; cloning from $REPO_URL"
     TMP="$(mktemp -d)"
-    ( command -v git >/dev/null 2>&1 && git clone --depth 1 "$REPO_URL" "$TMP/repo" ) || {
-        echo "!! git not available or clone failed. Run inside the cloned repo instead."
+    if command -v git >/dev/null 2>&1; then
+        git clone --depth 1 "$REPO_URL" "$TMP/repo"
+    else
+        echo "!! git not available. Install git or run inside the cloned repo."
         exit 1
-    }
+    fi
     AGENT_DIR="$TMP/repo/guardian_agent"
 fi
 cd "$AGENT_DIR"
 
+# Locate a working python3
+PY="$(command -v python3 || command -v python || true)"
+if [ -z "$PY" ]; then
+    echo "!! python3 not found after install. Aborting."
+    exit 1
+fi
+
 echo "==> Home Network Guardian installer (router / house agent)"
+echo "==> Agent dir: $AGENT_DIR"
 
 # ---- 1. Detect package manager ---------------------------------------
 if command -v opkg >/dev/null 2>&1; then
@@ -47,14 +57,16 @@ echo "==> Package manager: $PM"
 # ---- 2. Install OS packages ------------------------------------------
 $PKG_UPDATE
 echo "==> Installing python3, nmap, arp-scan, suricata ..."
-$PKG_INSTALL python3 nmap arp-scan suricata || {
+if ! $PKG_INSTALL python3 nmap arp-scan suricata; then
     echo "!! Suricata may be unavailable; agent still works with discovery only."
     $PKG_INSTALL python3 nmap arp-scan || true
-}
+fi
 
 # ---- 3. Generate the ONE house API key -------------------------------
 echo "==> Generating house API key (one key for the whole house)..."
-python3 api_key.py
+KEY_OUT="$("$PY" api_key.py)"
+echo "$KEY_OUT"
+HOUSE_KEY="$(echo "$KEY_OUT" | awk -F': ' '/API Key/{print $2}')"
 
 chmod +x guardian_agent.py
 
@@ -70,7 +82,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=$AGENT_DIR
-ExecStart=/usr/bin/python3 $AGENT_DIR/guardian_agent.py
+ExecStart=$PY $AGENT_DIR/guardian_agent.py
 Restart=on-failure
 RestartSec=10
 
@@ -81,11 +93,15 @@ EOF
     systemctl enable --now guardian.service
     echo "==> Started. Logs: journalctl -u guardian -f"
 elif [ "$PM" = "opkg" ]; then
-    echo "==> OpenWrt: add a procd init script to autostart (see README)."
+    echo "==> OpenWrt detected. Create /etc/init.d/guardian (procd) to autostart."
+    echo "   Then: /etc/init.d/guardian enable && /etc/init.d/guardian start"
 else
-    echo "==> No systemd. Run manually: sudo python3 guardian_agent.py"
+    echo "==> No systemd. Run manually: sudo $PY guardian_agent.py"
 fi
 
 echo
-echo "==> Copy the hng_house_... API key above into your website for this house."
+echo "==================================================================="
+echo "  HOUSE API KEY: ${HOUSE_KEY}"
+echo "  Copy this ONE key into your website for the whole house."
+echo "==================================================================="
 echo "==> Done."
