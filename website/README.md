@@ -22,6 +22,21 @@ For production set env vars (or edit `app.py`):
 SECRET_KEY=... JWT_SECRET_KEY=... DATABASE_URL=postgresql://user:pass@host/db
 ```
 
+## Deploy to Render (free)
+1. Push this repo to GitHub.
+2. Go to https://dashboard.render.com → **New** → **Blueprint** → connect
+   `Mr-A-Hacker/home-network-guardian`.
+3. Render reads `render.yaml`: creates the web service (from `/website`) and a
+   free Postgres DB, sets `PORT`, `SECRET_KEY`, `JWT_SECRET_KEY`, and
+   `DATABASE_URL` automatically.
+4. After deploy, open the provided `*.onrender.com` URL. `render.yaml` also
+   works with a plain **Web Service** + **Postgres** if you prefer manual setup
+   (use the `Procfile`: `gunicorn app:app --bind 0.0.0.0:$PORT`).
+
+The agent's `config.json` `base_url` should be
+`https://YOUR-APP.onrender.com/api`.
+
+
 ## How the router connects
 On the router, set `config.json`:
 ```json

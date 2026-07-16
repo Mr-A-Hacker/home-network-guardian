@@ -1,0 +1,30 @@
+# Render deployment config for Home Network Guardian (website).
+# Deploy: https://dashboard.render.com  ->  New  ->  Blueprints  ->  connect repo.
+# This file lives at the repo root; the website code is in /website.
+
+services:
+  - type: web
+    name: home-network-guardian
+    runtime: python
+    rootDir: website
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: guardian-db
+          property: connectionString
+
+databases:
+  - name: guardian-db
+    plan: free
+    databaseName: guardian
+    user: guardian

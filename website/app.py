@@ -3,14 +3,19 @@
 Connects the router agent (via its house API key) to a user account with
 sign-up / sign-in, houses, and a Pro tier.
 
-Stack: Flask + Flask-JWT-Extended + Flask-SQLAlchemy (SQLite by default,
-swap to Postgres via DATABASE_URL for production).
+Stack: Flask + Flask-JWT-Extended + Flask-SQLAlchemy. Uses SQLite by default,
+or Postgres when DATABASE_URL is set (Render free Postgres).
 
-Run:
+Run locally:
     pip install -r requirements.txt
     flask --app app run --host 0.0.0.0 --port 5000
+
+Run on Render (gunicorn):
+    gunicorn app:app
 """
-from flask import Flask
+import os
+
+from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
@@ -19,12 +24,22 @@ db = SQLAlchemy()
 jwt = JWTManager()
 
 
+def _secret(key: str, default: str) -> str:
+    return os.environ.get(key, default)
+
+
 def create_app() -> Flask:
     app = Flask(__name__, static_folder="static", template_folder="templates")
+
+    db_url = os.environ.get("DATABASE_URL", "sqlite:///guardian.db")
+    # Render Postgres URLs sometimes arrive as postgres:// (older scheme).
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+
     app.config.from_mapping(
-        SECRET_KEY="change-me-in-production",
-        JWT_SECRET_KEY="change-me-in-production",
-        SQLALCHEMY_DATABASE_URI="sqlite:///guardian.db",
+        SECRET_KEY=_secret("SECRET_KEY", "dev-change-me"),
+        JWT_SECRET_KEY=_secret("JWT_SECRET_KEY", "dev-change-me-jwt"),
+        SQLALCHEMY_DATABASE_URI=db_url,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         JWT_ACCESS_TOKEN_EXPIRES=60 * 60 * 24 * 7,  # 7 days
     )
@@ -47,7 +62,12 @@ def create_app() -> Flask:
 
     @app.get("/health")
     def health():
-        return {"status": "ok"}
+        return jsonify(status="ok")
+
+    # Serve the SPA for any non-API route (so deep links work in production).
+    @app.get("/")
+    def index():
+        return app.send_static_file("index.html")
 
     return app
 
