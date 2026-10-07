@@ -1,3 +1,8 @@
+> ## 👋 Start Here
+> A home-network monitoring/security project. **For users:** learn how local tools can help you understand devices and activity on a network you own.
+
+---
+
 # Home Network Guardian
 
 A router-only monitoring agent that watches your **entire house** from the
